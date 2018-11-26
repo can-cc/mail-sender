@@ -1,0 +1,11 @@
+
+Usage:	mailser COMMAND
+
+Options:
+  -mailgun-api
+  -domain
+  -noreply
+  -recipient
+  -recipient-name
+
+Run mailser -help' for more information.
