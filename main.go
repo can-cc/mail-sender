@@ -2,12 +2,23 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/fwchen/mail-sender/email"
 	"github.com/fwchen/mail-sender/email/mailgun"
 	"github.com/fwchen/mail-sender/web"
+	"io/ioutil"
 )
 
 func main() {
+	flag.Usage = func() {
+		b, err := ioutil.ReadFile("help.txt") // just pass the file name
+		if err != nil {
+			fmt.Print(err)
+		}
+		helpStr := string(b)
+		fmt.Println(helpStr)
+	}
+
 	mailgunApi := flag.String("mailgun-api", "", "mailgun api")
 	domain := flag.String("domain", "", "mailgun domain")
 	noReply := flag.String("noreply", "", "mailgun noreply")
@@ -16,17 +27,27 @@ func main() {
 	flag.Parse()
 
 	if len(*mailgunApi) <= 0 {
-		panic("mailgun-api is required.")
+		flag.Usage()
+		return
 	}
 	if len(*domain) <= 0 {
-		panic("domain is required.")
+		flag.Usage()
+		return
 	}
 	if len(*noReply) <= 0 {
-		panic("noreply is required.")
+		flag.Usage()
+		return
 	}
 	if len(*recipient) <= 0 {
-		panic("target is required.")
+		flag.Usage()
+		return
 	}
+	if len(*recipientName) <= 0 {
+		flag.Usage()
+		return
+	}
+
+	fmt.Println()
 
 	client := web.NewHTTPClient()
 	sender := mailgun.NewSender(client, *domain, *mailgunApi)
@@ -35,4 +56,6 @@ func main() {
 		Address: *recipient,
 	}
 	sender.Send(*noReply, email.Params{}, "Test", to)
+
+	fmt.Println()
 }
