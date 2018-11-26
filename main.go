@@ -12,7 +12,7 @@ func main() {
 	domain := flag.String("domain", "", "mailgun domain")
 	noReply := flag.String("noreply", "", "mailgun noreply")
 	recipient := flag.String("recipient", "", "recipient address")
-	recipientName := flag.String("target-name", "", "recipient name")
+	recipientName := flag.String("recipient-name", "", "recipient name")
 	flag.Parse()
 
 	if len(*mailgunApi) <= 0 {
