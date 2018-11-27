@@ -1,13 +1,54 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
-	"github.com/fwchen/mail-sender/email"
-	"github.com/fwchen/mail-sender/email/mailgun"
-	"github.com/fwchen/mail-sender/web"
+	"github.com/mailgun/mailgun-go"
+	"io"
 	"io/ioutil"
+	"log"
+	"os"
 )
+
+const (
+	chunksize int = 1024
+)
+
+func openFile(name string) (byteCount int, buffer *bytes.Buffer) {
+	var (
+		data  *os.File
+		part  []byte
+		err   error
+		count int
+	)
+
+	data, err = os.Open(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer data.Close()
+
+	reader := bufio.NewReader(data)
+	buffer = bytes.NewBuffer(make([]byte, 0))
+	part = make([]byte, chunksize)
+
+	for {
+		if count, err = reader.Read(part); err != nil {
+			break
+		}
+		buffer.Write(part[:count])
+	}
+	if err != io.EOF {
+		log.Fatal("Error Reading ", name, ": ", err)
+	} else {
+		err = nil
+	}
+
+	byteCount = buffer.Len()
+	return
+}
 
 func main() {
 	flag.Usage = func() {
@@ -19,14 +60,17 @@ func main() {
 		fmt.Println(helpStr)
 	}
 
-	mailgunApi := flag.String("mailgun-api", "", "mailgun api")
+	mailgunApiKey := flag.String("mailgun-api-key", "", "mailgun api")
 	domain := flag.String("domain", "", "mailgun domain")
 	noReply := flag.String("noreply", "", "mailgun noreply")
 	recipient := flag.String("recipient", "", "recipient address")
 	recipientName := flag.String("recipient-name", "", "recipient name")
+	attachmentPath := flag.String("attachment-path", "", "attachment-path")
+	subject := flag.String("subject", "", "subject")
+	body := flag.String("body", "", "body")
 	flag.Parse()
 
-	if len(*mailgunApi) <= 0 {
+	if len(*mailgunApiKey) <= 0 {
 		flag.Usage()
 		return
 	}
@@ -46,16 +90,28 @@ func main() {
 		flag.Usage()
 		return
 	}
+	if len(*subject) <= 0 {
+		flag.Usage()
+		return
+	}
+	if len(*body) <= 0 {
+		flag.Usage()
+		return
+	}
 
 	fmt.Println()
 
-	client := web.NewHTTPClient()
-	sender := mailgun.NewSender(client, *domain, *mailgunApi)
-	to := email.Recipient{
-		Name:    *recipientName,
-		Address: *recipient,
-	}
-	sender.Send(*noReply, email.Params{}, "Test", to)
+	gun := mailgun.NewMailgun(*domain, *mailgunApiKey)
+
+	_, attachmentBuffer := openFile(*attachmentPath)
+	rc := ioutil.NopCloser((attachmentBuffer))
+
+	m := mailgun.NewMessage(*noReply, *subject, *body, *recipient)
+	m.AddReaderAttachment(*attachmentPath, rc)
+
+	response, id, _ := gun.Send(m)
+	fmt.Printf("Response ID: %s\n", id)
+	fmt.Printf("Message from server: %s\n", response)
 
 	fmt.Println()
 }
