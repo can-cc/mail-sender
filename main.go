@@ -64,7 +64,6 @@ func main() {
 	domain := flag.String("domain", "", "mailgun domain")
 	noReply := flag.String("noreply", "", "mailgun noreply")
 	recipient := flag.String("recipient", "", "recipient address")
-	recipientName := flag.String("recipient-name", "", "recipient name")
 	attachmentPath := flag.String("attachment-path", "", "attachment-path")
 	subject := flag.String("subject", "", "subject")
 	body := flag.String("body", "", "body")
@@ -86,10 +85,6 @@ func main() {
 		flag.Usage()
 		return
 	}
-	if len(*recipientName) <= 0 {
-		flag.Usage()
-		return
-	}
 	if len(*subject) <= 0 {
 		flag.Usage()
 		return
@@ -103,11 +98,13 @@ func main() {
 
 	gun := mailgun.NewMailgun(*domain, *mailgunApiKey)
 
-	_, attachmentBuffer := openFile(*attachmentPath)
-	rc := ioutil.NopCloser((attachmentBuffer))
+	// _, attachmentBuffer := openFile(*attachmentPath)
+	// rc := ioutil.NopCloser((attachmentBuffer))
 
 	m := mailgun.NewMessage(*noReply, *subject, *body, *recipient)
-	m.AddReaderAttachment(*attachmentPath, rc)
+	// m.AddReaderAttachment(*attachmentPath, rc)
+	m.AddAttachment(*attachmentPath)
+	// m.AddHeader("From", *recipientName)
 
 	response, id, _ := gun.Send(m)
 	fmt.Printf("Response ID: %s\n", id)
