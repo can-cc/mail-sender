@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/gobuffalo/packr"
 	"github.com/mailgun/mailgun-go"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -51,13 +51,11 @@ func openFile(name string) (byteCount int, buffer *bytes.Buffer) {
 }
 
 func main() {
+	box := packr.NewBox("./")
+	s, _ := box.FindString("help.txt")
+
 	flag.Usage = func() {
-		b, err := ioutil.ReadFile("help.txt") // just pass the file name
-		if err != nil {
-			fmt.Print(err)
-		}
-		helpStr := string(b)
-		fmt.Println(helpStr)
+		fmt.Println(s)
 	}
 
 	mailgunApiKey := flag.String("mailgun-api-key", "", "mailgun api")
